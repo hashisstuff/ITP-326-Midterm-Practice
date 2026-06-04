@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Midterm Study Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d; --surface: #161616; --surface2: #1f1f1f;
+    --border: #2e2e2e; --accent: #c8f23a; --accent2: #f23a6e;
+    --text: #f0f0e8; --muted: #888; --correct: #3af27a; --wrong: #f23a6e;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; overflow-x: hidden; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .header-actions { display: flex; gap: 10px; }
+  .btn { font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.05em; border: 1px solid var(--border); background: transparent; color: var(--text); padding: 8px 16px; border-radius: var(--radius); cursor: pointer; transition: all 0.15s; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 500; }
+  .btn.primary:hover { background: #d8ff50; }
+  .btn.secondary { background: var(--surface2); border-color: #444; }
+  .btn.danger { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* HOME */
+  #home-screen { max-width: 680px; margin: 80px auto; padding: 0 24px; text-align: center; }
+  #home-screen h1 { font-family: 'Syne', sans-serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.05; margin-bottom: 16px; }
+  #home-screen h1 em { font-style: normal; color: var(--accent); }
+  #home-screen p { color: var(--muted); font-size: 0.85rem; margin-bottom: 40px; line-height: 1.8; }
+  .stats-bar { display: flex; justify-content: center; gap: 32px; margin-bottom: 40px; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); flex-wrap: wrap; }
+  .stat-item { text-align: center; }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .home-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* ADMIN */
+  #admin-screen { max-width: 900px; margin: 40px auto; padding: 0 24px 60px; }
+  #admin-screen h2 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 0.8rem; margin-bottom: 24px; }
+  .admin-toolbar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+  .admin-question { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; }
+  .admin-q-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+  .q-num { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; margin-top: 2px; }
+  .admin-q-text { font-size: 0.82rem; line-height: 1.6; flex: 1; }
+  .admin-options { display: flex; flex-direction: column; gap: 8px; }
+  .admin-option { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.12s; font-size: 0.78rem; }
+  .admin-option:hover { border-color: #444; background: var(--surface2); }
+  .admin-option.selected-correct { border-color: var(--correct); background: rgba(58,242,122,0.08); }
+  .admin-option input[type="checkbox"] { accent-color: var(--correct); cursor: pointer; flex-shrink: 0; }
+  .admin-option label { cursor: pointer; flex: 1; line-height: 1.5; }
+
+  /* QUIZ */
+  #quiz-screen { max-width: 720px; margin: 40px auto; padding: 0 24px 80px; }
+  .quiz-progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 32px; overflow: hidden; }
+  .quiz-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+  .quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; font-size: 0.72rem; color: var(--muted); }
+  .quiz-counter { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+  .quiz-question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+  .quiz-q-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 10px; }
+  .quiz-q-text { font-size: 0.92rem; line-height: 1.7; }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+  .quiz-option { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; font-size: 0.82rem; line-height: 1.5; background: var(--surface); user-select: none; }
+  .quiz-option:hover:not(.locked) { border-color: var(--accent); background: rgba(200,242,58,0.05); }
+  .quiz-option.selected { border-color: var(--accent); background: rgba(200,242,58,0.08); }
+  .quiz-option.correct { border-color: var(--correct); background: rgba(58,242,122,0.1); }
+  .quiz-option.wrong { border-color: var(--wrong); background: rgba(242,58,110,0.08); }
+  .quiz-option.reveal-correct { border-color: var(--correct); background: rgba(58,242,122,0.06); }
+  .quiz-option.locked { cursor: default; }
+  .option-letter { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 500; flex-shrink: 0; transition: all 0.15s; }
+  .quiz-option.selected .option-letter { background: var(--accent); border-color: var(--accent); color: #000; }
+  .quiz-option.correct .option-letter { background: var(--correct); border-color: var(--correct); color: #000; }
+  .quiz-option.wrong .option-letter { background: var(--wrong); border-color: var(--wrong); color: #fff; }
+  .quiz-option.reveal-correct .option-letter { background: rgba(58,242,122,0.3); border-color: var(--correct); }
+  .feedback-box { padding: 14px 16px; border-radius: var(--radius); font-size: 0.8rem; line-height: 1.6; margin-bottom: 20px; display: none; }
+  .feedback-box.correct { background: rgba(58,242,122,0.08); border: 1px solid var(--correct); color: var(--correct); }
+  .feedback-box.wrong { background: rgba(242,58,110,0.08); border: 1px solid var(--wrong); color: #f77; }
+  .quiz-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* RESULTS */
+  #results-screen { max-width: 680px; margin: 60px auto; padding: 0 24px 80px; text-align: center; }
+  .score-ring-wrap { margin: 0 auto 32px; width: 160px; height: 160px; position: relative; }
+  .score-ring-wrap svg { transform: rotate(-90deg); }
+  .score-circle-bg { fill: none; stroke: var(--border); stroke-width: 10; }
+  .score-circle-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease; }
+  .score-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .score-pct { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; }
+  .score-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  #results-screen h2 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; margin-bottom: 10px; }
+  #results-screen .grade-msg { color: var(--muted); font-size: 0.85rem; margin-bottom: 32px; }
+  .results-breakdown { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 36px; }
+  .breakdown-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .breakdown-num { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; }
+  .breakdown-num.c { color: var(--correct); }
+  .breakdown-num.w { color: var(--wrong); }
+  .breakdown-lbl { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .results-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* REVIEW */
+  #review-screen { max-width: 720px; margin: 40px auto; padding: 0 24px 80px; }
+  #review-screen h2 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; }
+  .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; }
+  .review-item.correct-q { border-left: 3px solid var(--correct); }
+  .review-item.wrong-q { border-left: 3px solid var(--wrong); }
+  .review-q-header { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+  .review-badge { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+  .review-badge.c { background: rgba(58,242,122,0.15); color: var(--correct); }
+  .review-badge.w { background: rgba(242,58,110,0.15); color: var(--wrong); }
+  .review-q-text { font-size: 0.82rem; line-height: 1.6; }
+  .review-answer { font-size: 0.78rem; color: var(--muted); padding: 8px 12px; background: var(--surface2); border-radius: 6px; }
+  .review-answer span { color: var(--correct); }
+
+  /* MODALS */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 32px; width: 100%; max-width: 420px; }
+  .modal h3 { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
+  .modal p { color: var(--muted); font-size: 0.78rem; margin-bottom: 20px; line-height: 1.7; }
+  .modal input, .modal textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.82rem; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; outline: none; }
+  .modal input { text-align: center; letter-spacing: 0.1em; }
+  .modal textarea { resize: vertical; min-height: 120px; text-align: left; }
+  .modal input:focus, .modal textarea:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .modal-wide { max-width: 560px; }
+  #export-text { font-size: 0.7rem; min-height: 160px; user-select: all; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border); padding: 10px 20px; border-radius: 50px; font-size: 0.75rem; transition: transform 0.3s; z-index: 999; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 520px) {
+    header { padding: 14px 16px; }
+    .results-breakdown { grid-template-columns: 1fr 1fr; }
+    .stats-bar { gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">study<span>.</span>quiz</div>
+  <div class="header-actions">
+    <button class="btn" id="btn-admin-open">Admin</button>
+    <button class="btn" id="btn-home" style="display:none">← Home</button>
+  </div>
+</header>
+
+<!-- HOME -->
+<div id="home-screen" class="screen active">
+  <h1>Midterm<br><em>Practice Quiz</em></h1>
+  <p>All questions from your course material — shuffled each time.<br>Test yourself, review mistakes, and crush the midterm.</p>
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Questions</div></div>
+    <div class="stat-item"><div class="stat-num" id="stat-answered">0</div><div class="stat-label">Answers Set</div></div>
+    <div class="stat-item"><div class="stat-num" id="stat-best">—</div><div class="stat-label">Best Score</div></div>
+  </div>
+  <div class="home-actions">
+    <button class="btn primary" id="btn-start">Start Quiz</button>
+    <button class="btn" id="btn-start-unanswered">Only Unanswered</button>
+  </div>
+  <p style="margin-top:20px;font-size:0.72rem;color:var(--muted)">Open Admin to mark correct answers. Use Export/Import to sync across devices.</p>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen" class="screen">
+  <h2>Admin Panel</h2>
+  <p class="subtitle">Mark correct answers. Export to save; Import to restore on any device/browser.</p>
+  <div class="admin-toolbar">
+    <button class="btn primary" id="btn-export-answers">↓ Export Answers</button>
+    <button class="btn secondary" id="btn-import-answers">↑ Import Answers</button>
+    <button class="btn" id="btn-admin-back">← Back</button>
+  </div>
+  <div id="admin-questions-list"></div>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz-screen" class="screen">
+  <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="progress-fill"></div></div>
+  <div class="quiz-meta">
+    <span class="quiz-counter"><span id="q-current">1</span> / <span id="q-total">0</span></span>
+    <span id="q-tag" style="color:var(--accent);font-size:0.68rem;background:rgba(200,242,58,0.08);padding:2px 8px;border-radius:4px"></span>
+  </div>
+  <div class="quiz-question-card">
+    <div class="quiz-q-label">Question</div>
+    <div class="quiz-q-text" id="quiz-q-text"></div>
+  </div>
+  <div class="quiz-options" id="quiz-options"></div>
+  <div class="feedback-box" id="feedback-box"></div>
+  <div class="quiz-actions">
+    <button class="btn" id="btn-check" style="display:none">Check Answer</button>
+    <button class="btn primary" id="btn-next" style="display:none">Next →</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-screen" class="screen">
+  <div class="score-ring-wrap">
+    <svg width="160" height="160" viewBox="0 0 160 160">
+      <circle class="score-circle-bg" cx="80" cy="80" r="65"/>
+      <circle class="score-circle-fill" id="score-circle" cx="80" cy="80" r="65" stroke-dasharray="408.41" stroke-dashoffset="408.41"/>
+    </svg>
+    <div class="score-ring-text">
+      <div class="score-pct" id="score-pct">0%</div>
+      <div class="score-label">Score</div>
+    </div>
+  </div>
+  <h2 id="result-heading">Quiz Complete</h2>
+  <p class="grade-msg" id="result-msg"></p>
+  <div class="results-breakdown">
+    <div class="breakdown-item"><div class="breakdown-num c" id="res-correct">0</div><div class="breakdown-lbl">Correct</div></div>
+    <div class="breakdown-item"><div class="breakdown-num w" id="res-wrong">0</div><div class="breakdown-lbl">Wrong</div></div>
+    <div class="breakdown-item"><div class="breakdown-num" id="res-total">0</div><div class="breakdown-lbl">Total</div></div>
+  </div>
+  <div class="results-actions">
+    <button class="btn primary" id="btn-retake">Retake (Reshuffled)</button>
+    <button class="btn" id="btn-review">Review Answers</button>
+    <button class="btn" id="btn-results-home">Home</button>
+  </div>
+</div>
+
+<!-- REVIEW -->
+<div id="review-screen" class="screen">
+  <h2>Review</h2>
+  <p class="subtitle">See what you got right and wrong.</p>
+  <div id="review-list"></div>
+  <button class="btn" id="btn-review-back" style="margin-top:8px">← Results</button>
+</div>
+
+<!-- ADMIN PASSWORD MODAL -->
+<div class="modal-overlay" id="admin-modal">
+  <div class="modal" style="text-align:center">
+    <h3>Admin Access</h3>
+    <p>Enter the admin password to manage answers.</p>
+    <input type="password" id="admin-pwd-input" placeholder="password" />
+    <div class="modal-actions">
+      <button class="btn primary" id="btn-pwd-confirm">Enter</button>
+      <button class="btn" id="btn-pwd-cancel">Cancel</button>
+    </div>
+    <p id="pwd-error" style="color:var(--wrong);font-size:0.72rem;margin-top:10px;display:none">Incorrect password</p>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="modal-overlay" id="export-modal">
+  <div class="modal modal-wide">
+    <h3>Export Answers</h3>
+    <p>Copy this text and save it somewhere safe. Paste it into the Import box on any device to restore your answers.</p>
+    <textarea id="export-text" readonly></textarea>
+    <div class="modal-actions">
+      <button class="btn primary" id="btn-copy-export">Copy to Clipboard</button>
+      <button class="btn" id="btn-close-export">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal modal-wide">
+    <h3>Import Answers</h3>
+    <p>Paste your previously exported answer key below. This will <strong style="color:var(--wrong)">overwrite</strong> any answers currently set.</p>
+    <textarea id="import-text" placeholder="Paste exported answer key here..."></textarea>
+    <div class="modal-actions">
+      <button class="btn primary" id="btn-do-import">Import</button>
+      <button class="btn" id="btn-close-import">Cancel</button>
+    </div>
+    <p id="import-error" style="color:var(--wrong);font-size:0.72rem;margin-top:10px;display:none">Invalid format — make sure you pasted the full exported text.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_PASSWORD = "midterm2025";
+
+// ── ALL QUESTIONS ──────────────────────────────────────────────────────────
+const ALL_QUESTIONS = [
+  // === QUIZ SET 1: Industrial Design & Usability ===
+  { id:"q1_1", tag:"Design & Usability", text:"According to the model developed by Nielsen & Landauer, in usability testing, a panel of five users will reveal approximately 95% of the problems.", options:["True","False"], multi:false },
+  { id:"q1_2", tag:"Design & Usability", text:"Affordances are all the product's features that communicate action possibilities or its utilitarian functions.", options:["True","False"], multi:false },
+  { id:"q1_3", tag:"Design & Usability", text:"What product's characteristic is mostly responsible for attaining products that are easily understood by users?", options:["Product's dimensions","Product's features","Product's affordances","Product's controls","Affordances' perceptual information"], multi:false },
+  { id:"q1_4", tag:"Design & Usability", text:"The affordances of a product define its usability while the perceptual information that specifies those affordances defines the product's usefulness.", options:["True","False"], multi:false },
+  { id:"q1_5", tag:"Design & Usability", text:"When a designer/engineer tries to design for the widest possible audience, she/he is using the anthropometric approach called:", options:["Design for adjustability","Design for the small","Design for the tall","Design for all","Design for more types"], multi:false },
+  { id:"q1_6", tag:"Design & Usability", text:"When defining the dimensions of a product and its features, the safest approach is to design for an average subject.", options:["True","False"], multi:false },
+  { id:"q1_7", tag:"Design & Usability", text:"Design language is defined as all the specific terminology used by designers when explaining design features.", options:["True","False"], multi:false },
+  { id:"q1_8", tag:"Design & Usability", text:"When an industrial designer is developing a product, which aspects are included in his/her considerations?", options:["Cost reduction and manufacturability","Material and manufacturing process selection","Aesthetics and ergonomics","Aesthetics, ergonomics, cost, manufacturability, and material selection"], multi:false },
+  { id:"q1_9", tag:"Design & Usability", text:"What type of products depends critically on industrial design for commercial success?", options:["Products that are used and/or seen by people","Products that are based on the latest technologies","Products that are based on physical mechanisms","Products that are environmentally friendly"], multi:false },
+  { id:"q1_10", tag:"Design & Usability", text:"What is the name of the industrial designer who designed the Braun SK4 radio receiver?", options:["Raymond Loewy","Dieter Rams","Alfred Whitehead","Walter Gropius","Henry Dreyfus"], multi:false },
+  { id:"q1_11", tag:"Design & Usability", text:"In which historical period were nesting tables with geometric, layered aesthetic designed (Bauhaus-era)?", options:["Styling","Arts and Crafts","Modernism","Art Nouveau","Art Deco"], multi:false },
+  { id:"q1_12", tag:"Design & Usability", text:"What is the name of the industrial designer who designed the first Polaroid camera?", options:["Henry Dreyfus","Alfred Whitehead","Walter Gropius","Dieter Rams","Raymond Loewy"], multi:false },
+  { id:"q1_13", tag:"Design & Usability", text:"The Gestalt Theory postulates that when we look at an object, we see the whole before seeing the individual parts that make up that whole.", options:["True","False"], multi:false },
+  { id:"q1_14", tag:"Design & Usability", text:"The circular button of the Braun coffee grinder is an example of which perceptual principle?", options:["Law of Unity","Law of Simplicity","Symmetry","Proximity","Law of Focal Point"], multi:false },
+  { id:"q1_15", tag:"Design & Usability", text:"Henry Dreyfus, the man who worked extensively for John Deere, made significant contributions to the fields of anthropometrics.", options:["True","False"], multi:false },
+  { id:"q1_16", tag:"Design & Usability", text:"\"Form, line, proportion, and color are used to integrate the product into a pleasing whole\". Who proposed this concept?", options:["Jony Ive","Walter Gropius","Dieter Rams","Henry Dreyfus","Frank Lloyd Wright"], multi:false },
+  { id:"q1_17", tag:"Design & Usability", text:"According to Whitehead, aesthetic enjoyment comes from recognizing patterns.", options:["True","False"], multi:false },
+  { id:"q1_18", tag:"Design & Usability", text:"Raymond Loewy, the man who redesigned the Coke glass bottle in its current shape, made significant contributions to the field of ergonomics.", options:["True","False"], multi:false },
+  { id:"q1_19", tag:"Design & Usability", text:"The use of aerodynamic shapes on every object is a design strategy known as streamlining — which design movement made extensive use of it?", options:["Art Deco","Modernism","Styling","Art Nouveau","Bauhaus"], multi:false },
+  { id:"q1_20", tag:"Design & Usability", text:"What are the principal components of usability theory?", options:["Human-product interaction model, human processor model, cyclic interaction model","Exposure, perception, encodation, comprehension, execution, action","User, task, product, context","None of the options","Perceptual system, cognitive system, motor system"], multi:false },
+
+  // === QUIZ SET 2: Concept Development ===
+  { id:"q2_1", tag:"Concept Development", text:"Nielsen & Landauer showed that, in usability testing, a panel of five users will typically reveal approximately 80-85% of the problems.", options:["True","False"], multi:false },
+  { id:"q2_2", tag:"Concept Development", text:"What is the first activity of the concept development phase?", options:["Identification of needs","Concept selection","Concept testing","Concept generation","Creating a design brief"], multi:false },
+  { id:"q2_3", tag:"Concept Development", text:"Concept screening matrices provide increased resolution than concept scoring matrices.", options:["True","False"], multi:false },
+  { id:"q2_4", tag:"Concept Development", text:"When collecting concept test data by phone, how is a product concept communicated?", options:["None of the options are right; you can't test a product concept by phone","Using prototypes","Using verbal descriptions","Using storyboards and simulations","Using verbal descriptions and sketches"], multi:false },
+  { id:"q2_5", tag:"Concept Development", text:"Your team needs to objectively select product concepts. Which tool would you recommend using?", options:["Consider pros and cons","Choose based on intuition","Decision matrices","Team multi-voting","Online survey"], multi:false },
+  { id:"q2_6", tag:"Concept Development", text:"Designs are analogous if they share at least one function or behavior, but not necessarily similar structures.", options:["True","False"], multi:false },
+  { id:"q2_7", tag:"Concept Development", text:"Design by analogy NOT always connects nature (source domain) with an artificial application (target domain).", options:["True","False"], multi:false },
+  { id:"q2_8", tag:"Concept Development", text:"Which element is key to start creating a successful new product concept?", options:["Economical success","Good consumer insights","Access to technology","A multidisciplinary team","Inspiration"], multi:false },
+  { id:"q2_9", tag:"Concept Development", text:"A mock-up of a chainsaw made of foam is an example of a...", options:["None of the options is a good one","Works-like model","Looks-like model","Simulation model"], multi:false },
+  { id:"q2_10", tag:"Concept Development", text:"Eye-tracking technology is an example of users' self-reported data.", options:["True","False"], multi:false },
+  { id:"q2_11", tag:"Concept Development", text:"What is the outcome of the \"Clarify the Problem\" phase of the concept generation method suggested by Ulrich and Eppinger?", options:["New concepts","Integrated solutions","Sub-problems","Reflection on the process","Existing concepts"], multi:false },
+  { id:"q2_12", tag:"Concept Development", text:"What is the outcome of the \"Explore Systematically\" phase of the concept generation method suggested by Ulrich and Eppinger?", options:["Reflection on the process","Integrated solutions","New concepts","Existing concepts","Sub-problems"], multi:false },
+  { id:"q2_13", tag:"Concept Development", text:"What is the outcome of the \"Search Externally\" phase of the concept generation method suggested by Ulrich and Eppinger?", options:["Existing concepts","New concepts","Reflection on the process","Integrated solutions","Sub-problems"], multi:false },
+  { id:"q2_14", tag:"Concept Development", text:"What is the outcome of the \"Search Internally\" phase of the concept generation method suggested by Ulrich and Eppinger?", options:["Integrated solutions","Sub-problems","Reflection on the process","New concepts","Existing concepts"], multi:false },
+  { id:"q2_15", tag:"Concept Development", text:"A product concept is an approximate description of...", options:["Form, working principles, and materials","Marketing, engineering, and manufacturing","Technology, materials, and form","Target audience, product features, and manufacturing processes","Form, working principles, and technology"], multi:false },
+  { id:"q2_16", tag:"Concept Development", text:"Product concept selection activities rely mainly on data gathered from...", options:["Focus groups","Surveys","Development team members","Potential users","Potential users and development team members"], multi:false },
+  { id:"q2_17", tag:"Concept Development", text:"Product concept testing activities rely mainly on data gathered from...", options:["Development team members","Surveys","Potential users and development team members","Potential users","Focus groups"], multi:false },
+  { id:"q2_18", tag:"Concept Development", text:"Which problem-decomposition technique is recommended for products with high levels of user interaction?", options:["Decomposition by key customer needs","Decomposition by functions and key customer needs","Decomposition by tasks","Decomposition by tasks and functions","Decomposition by functions"], multi:false },
+  { id:"q2_19", tag:"Concept Development", text:"Which problem-decomposition technique is recommended for products where shape is the primary problem?", options:["Decomposition by tasks","Decomposition by functions and key customer needs","Decomposition by functions","Decomposition by key customer needs","Decomposition by tasks and functions"], multi:false },
+  { id:"q2_20", tag:"Concept Development", text:"Online surveys are examples of users' self-reported data.", options:["True","False"], multi:false },
+
+  // === QUIZ SET 3: Product Development Process ===
+  { id:"q3_1", tag:"Product Dev Process", text:"According to the Nature article on ancient baby bottles, why could they help explain the Neolithic demographic transition? (Select all that apply)", options:["Ancient baby bottles were not sanitary.","Thanks to these ancient baby bottles, mothers had shorter infertility periods because the breastfeeding period was shorter.","Ancient baby bottles allowed early weaning.","Hard-to-clean baby bottles led to an increase in infant mortality."], multi:true },
+  { id:"q3_2", tag:"Product Dev Process", text:"What is the output of the Concept Development phase?", options:["Design brief","Product concepts","Control documentation","Alpha and Beta prototypes","Preliminary product design"], multi:false },
+  { id:"q3_3", tag:"Product Dev Process", text:"What is the output of the Detail Design phase?", options:["Product concepts","Alpha and Beta prototypes","Design brief","Control documentation","Preliminary product design"], multi:false },
+  { id:"q3_4", tag:"Product Dev Process", text:"What is the output of the Planning phase?", options:["Design brief","Preliminary product design","Control documentation","Product concepts","Alpha and Beta prototypes"], multi:false },
+  { id:"q3_5", tag:"Product Dev Process", text:"What is the output of the System-level Design phase?", options:["Control documentation","Product concepts","Alpha and Beta prototypes","Preliminary product design","Design brief"], multi:false },
+  { id:"q3_6", tag:"Product Dev Process", text:"What is the output of the Testing and Refinement phase?", options:["Product concepts","Control documentation","Preliminary product design","Design brief","Alpha and Beta prototypes"], multi:false },
+  { id:"q3_7", tag:"Product Dev Process", text:"A generic product development process is also described as:", options:["Technology-push process","Process-intensive process","Complex systems","Market-pull process","Product-service systems"], multi:false },
+  { id:"q3_8", tag:"Product Dev Process", text:"What products are examples of Technology-Push product development processes?", options:["Product-service systems","Printers","Furniture","Tide pods","Sporting goods"], multi:false },
+  { id:"q3_9", tag:"Product Dev Process", text:"What is the FIRST phase of the product development process suggested by Ulrich and Eppinger?", options:["Production ramp-up","Concept development","Detail design","System-level design","Planning","Testing and refinement"], multi:false },
+  { id:"q3_10", tag:"Product Dev Process", text:"What is the SECOND phase of the product development process suggested by Ulrich and Eppinger?", options:["Planning","Testing and refinement","Production ramp-up","Detail design","Concept development","System-level design"], multi:false },
+  { id:"q3_11", tag:"Product Dev Process", text:"What is the THIRD phase of the product development process suggested by Ulrich and Eppinger?", options:["Testing and refinement","Production ramp-up","Concept development","System-level design","Planning","Detail design"], multi:false },
+  { id:"q3_12", tag:"Product Dev Process", text:"What is the FOURTH phase of the product development process suggested by Ulrich and Eppinger?", options:["Detail design","Testing and refinement","Production ramp-up","Concept development","Planning","System-level design"], multi:false },
+  { id:"q3_13", tag:"Product Dev Process", text:"What is the FIFTH phase of the product development process suggested by Ulrich and Eppinger?", options:["Concept development","Detail design","Testing and refinement","System-level design","Planning","Production ramp-up"], multi:false },
+  { id:"q3_14", tag:"Product Dev Process", text:"What is the SIXTH phase of the product development process suggested by Ulrich and Eppinger?", options:["Detail design","Concept development","Testing and refinement","Planning","Production ramp-up","System-level design"], multi:false },
+  { id:"q3_15", tag:"Product Dev Process", text:"In a functional organization, the organizational links correspond to the development projects.", options:["True","False"], multi:false },
+  { id:"q3_16", tag:"Product Dev Process", text:"In a project organization, the organizational links are primarily among those who perform similar functions.", options:["True","False"], multi:false },
+
+  // === QUIZ SET 4: Customer Needs & Ethnographic Research ===
+  { id:"q4_1", tag:"Customer Needs", text:"If a smartphone manufacturer deployed its new product development team to evaluate how the phones of five other competitors in the industry were addressing an important call placing function and used ratings and rankings to quantify the evaluation process, what might you call that?", options:["Snoop & scoop","Creative analysis","Comparative benchmarking","TRIZ, the Russian method"], multi:false },
+  { id:"q4_2", tag:"Customer Needs", text:"When the product development process is still relatively distant from final choices of product concepts to be implemented, what approach to concept testing would likely NOT be used?", options:["Have participants use crayons or dry-erase markers to express their feelings","Have participants go play with the new design","Large samples of respondents (n > 1000) and yes-no questions","More interactive questioning and no buying intent items"], multi:false },
+  { id:"q4_3", tag:"Customer Needs", text:"Identifying customer needs mostly relates to which design thinking activity?", options:["Ideate","Test","Define","Empathize","Prototype"], multi:false },
+  { id:"q4_4", tag:"Customer Needs", text:"Which of the following is NOT related to ethnographic research?", options:["Used for initial stages of product development","Performed in a lab","Anthropological technique","Reveals gaps in product use","Observation of use"], multi:false },
+  { id:"q4_5", tag:"Customer Needs", text:"Which method is strongly recommended for initial stages of new product development?", options:["None of the options is a good one","Focus groups","In-depth interviews","Ethnographic research","Usability testing"], multi:false },
+  { id:"q4_6", tag:"Customer Needs", text:"Based on class material and discussions, which product from this list was NOT developed using ethnographic research techniques?", options:["Kitsbow All Mountain MTB Shorts","Tide Pods","Swiffer's first product","Zyliss' ice cream scoop","First Apple's mouse"], multi:false },
+  { id:"q4_7", tag:"Customer Needs", text:"Focus groups are recommended to find innovative solutions to problems.", options:["True","False"], multi:false },
+  { id:"q4_8", tag:"Customer Needs", text:"Focus groups are recommended to gather people's perceptions on a defined area of interest.", options:["True","False"], multi:false },
+  { id:"q4_9", tag:"Customer Needs", text:"Average consumers can articulate latent needs very well when interviewed.", options:["True","False"], multi:false },
+  { id:"q4_10", tag:"Customer Needs", text:"Which of the following is NOT a proper need statement from the medication container testimonials?", options:["The pack is easy to open for people with weak hands","The pack has easy to read labeling","The pack is portable","The pack fits easily into bathroom cabinets","The pack is flat so it fits in pockets for portability"], multi:false },
+  { id:"q4_11", tag:"Customer Needs", text:"A proper customer need statement describes specific product features.", options:["True","False"], multi:false },
+
+  // === QUIZ SET 5: Design Thinking ===
+  { id:"q5_1", tag:"Design Thinking", text:"Which design modes are mainly focused on convergent thinking? (Select all that apply)", options:["Empathizing","Defining","Ideating","Testing","Prototyping"], multi:true },
+  { id:"q5_2", tag:"Design Thinking", text:"Which of the following is not a characteristic of a design thinker?", options:["Conformist","Empathic","Inquisitive","Maker","Collaborator"], multi:false },
+  { id:"q5_3", tag:"Design Thinking", text:"Which of the following is not a characteristic of design thinking?", options:["Technology-driven approach","Flexible problem-solving technique","Visual and physical method","Human-centered approach","Business-driven approach"], multi:false },
+  { id:"q5_4", tag:"Design Thinking", text:"The design thinking approach to product development emphasizes which activities?", options:["Non-judgmental brainstorming, interdisciplinary teams, early prototyping.","Disciplinary focus, quantitative analysis, early engineering models","Longitudinal socio-technical analysis, quantitative experimentation, formally structured team roles.","Interaction with late majority users, engineering graphics, careful and meticulous design processes","Business-driven approach"], multi:false },
+  { id:"q5_5", tag:"Design Thinking", text:"Disruptive technologies, in their early stages, typically underperform established products.", options:["True","False"], multi:false },
+  { id:"q5_6", tag:"Design Thinking", text:"Design thinking involves mainly convergent thinking.", options:["True","False"], multi:false },
+  { id:"q5_7", tag:"Design Thinking", text:"Which design modes are mainly focused on divergent thinking? (Select all that apply)", options:["Empathizing","Defining","Ideating","Testing","Prototyping"], multi:true },
+  { id:"q5_8", tag:"Design Thinking", text:"Why does empathizing with consumers in a design process help to develop successful consumer packages?", options:["Empathy reveals gaps between what people say they do and what people actually do with a packaged product","Empathy helps to gain a deeper understanding of cutting-edge packaging technology","Empathy enables engineers to talk with consumers by phone to understand their needs","Empathy that comes from observing users enables design thinkers to uncover deep and meaningful technological trends"], multi:false },
+  { id:"q5_9", tag:"Design Thinking", text:"The first iPod launched in 2001 in combination with iTunes are examples of evolutionary innovation or revolutionary innovation?", options:["Revolutionary","Evolutionary","None of the above"], multi:false },
+  { id:"q5_10", tag:"Design Thinking", text:"The prototyping activity is both a flaring (i.e., divergent) and narrowing (i.e., convergent) process.", options:["True","False"], multi:false },
+
+  // === QUIZ SET 6: Sustainability & LCA ===
+  { id:"q6_1", tag:"Sustainability", text:"Any biobased polymer materials are environmentally friendly.", options:["True","False"], multi:false },
+  { id:"q6_2", tag:"Sustainability", text:"Which type of LCA is more comprehensive from a sustainability viewpoint?", options:["Cradle-to-gate","Grade-to-grave","LCAs are never comprehensive","Cradle-to-cradle"], multi:false },
+  { id:"q6_3", tag:"Sustainability", text:"What are the product life cycle categories used to classify eco-design guidelines?", options:["Materials and energy","Materials/energy, production, distribution, use, recovery","Materials, manufacturing, use, disposal","Product, packaging, transport and logistics"], multi:false },
+  { id:"q6_4", tag:"Sustainability", text:"LCA stands for...", options:["Lifespan Cost Analysis","Life Cradle Analysis","Lifecycle Cost Analysis","Life Cycle Assessment"], multi:false },
+  { id:"q6_5", tag:"Sustainability", text:"The needs of which three elements must be met in order to have a sustainable development?", options:["Environment, society, and economy","Nature, humanity, and business","Equitability, viability, and bearability","Cost reduction, green policies, and social inclusion"], multi:false },
+  { id:"q6_6", tag:"Sustainability", text:"What is the largest advantage of the best quality product in terms of sustainability?", options:["Better margins through higher cost","Affords better materials","Less potential returns","Longer lifespan"], multi:false },
+  { id:"q6_7", tag:"Sustainability", text:"How can the 'Supply chain' lever support circularity?", options:["By creating closed-loop systems","By tightening accountability of delivery","By outsourcing production","By decreasing the time to market"], multi:false },
+  { id:"q6_8", tag:"Sustainability", text:"What does \"RECYCLE\" involve in the context of a circular economy?", options:["Breaking down and reusing end-of-life products","By discarding used components","Reusing waste for energy","Resale of used goods to secondary markets"], multi:false },
+  { id:"q6_9", tag:"Sustainability", text:"What is the difference between compostable, biodegradable, and degradable materials?", options:["They are all non-recyclable","They refer to the same process","They have different meanings","They are synonyms"], multi:false },
+  { id:"q6_10", tag:"Sustainability", text:"What is the primary goal of the 'Design/Construction' lever in circularity?", options:["Designing for durability and recyclability","Enhancing aesthetic appeal","Reducing complexity","All of the above","Designing for end of use"], multi:false },
+
+  // === QUIZ 7: Product Architecture ===
+  { id:"q7_1", tag:"Product Architecture", text:"Those sketches show variations for a tea maker. What concept discussed in class is the designer applying?", options:["Differentiation","Product Architecture","product architecture","Product architecture"], multi:false },
+  { id:"q7_2", tag:"Product Architecture", text:"Which of the following best describes modular architectures?", options:["When you need flexibility to exactly define the functional aspects of a product in the concept phase, the implementation of functional elements is spread across chunks, resulting in ill-defined interactions between the chunks.","Chunks are defined arbitrarily without specific functions, leading to a chaotic design process.","Each physical chunk implements a specific set of functional elements and has well-defined interactions with the other chunks.","When the idea is too new, chunks will be defined in the detail design phase."], multi:false },
+  { id:"q7_3", tag:"Product Architecture", text:"Product Architecture is usually visualized as...", options:["A scheme by which the functional elements of the product are arranged into groups.","None of the options.","A configuration for which elementary components of a product are arranged into functional chunks.","A layout by which the aesthetic elements of the product are arranged into functional chunks.","A scheme by which product mechanisms are arranged into functional groups."], multi:false },
+  { id:"q7_4", tag:"Product Architecture", text:"In which phases of the product development process product architecture is typically decided?", options:["Concept development and system-level design","System-level development and testing and refinements","Planning and concept development","System-level and detail design"], multi:false },
+  { id:"q7_5", tag:"Product Architecture", text:"Product architecture can be used for... (Select all that apply)", options:["Product Innovation","Cost reduction","Product differentiation","Component standardization","Product modernization"], multi:true },
+  { id:"q7_6", tag:"Product Architecture", text:"A new product architecture allowed a well-known Swiss watch manufacturer to improve their current analogic mechanisms.", options:["True","False"], multi:false },
+  { id:"q7_7", tag:"Product Architecture", text:"Before the 80s, Japanese watches were primarily digital (quartz based) while Swiss watches were primarily mechanical.", options:["True","False"], multi:false },
+  { id:"q7_8", tag:"Product Architecture", text:"A new product architecture allowed a well-known Swiss watch manufacturer to reduce number of components.", options:["True","False"], multi:false },
+  { id:"q7_9", tag:"Product Architecture", text:"Product architecture affects all three functions: marketing, design, and manufacturing.", options:["True","False"], multi:false },
+  { id:"q7_10", tag:"Product Architecture", text:"A new product architecture allowed a well-known Swiss watch manufacturer to create new designs quickly.", options:["True","False"], multi:false },
+
+  // === QUIZ 8: Prototyping ===
+  { id:"q8_1", tag:"Prototyping", text:"Alpha prototypes are a type of comprehensive, physical prototypes made with parts manufactured using actual production processes.", options:["True","False"], multi:false },
+  { id:"q8_2", tag:"Prototyping", text:"Any 3D printer using Fuse Deposition Modeling (FDM) can manufacture any type of shape.", options:["True","False"], multi:false },
+  { id:"q8_3", tag:"Prototyping", text:"The minimum layer thickness of a particular 3D printing technology is directly related to the surface finish of a 3D printed part.", options:["True","False"], multi:false },
+  { id:"q8_4", tag:"Prototyping", text:"A primary distinction between manufacturing and prototyping processes is that in a manufacturing process, raw materials are transformed into finished goods on a large scale.", options:["True","False"], multi:false },
+  { id:"q8_5", tag:"Prototyping", text:"Prototyping is a form of problem solving.", options:["True","False"], multi:false },
+  { id:"q8_6", tag:"Prototyping", text:"A 3D printer has a container filled with a photopolymer resin which is hardened with an ultraviolet light source. What type of 3D printing technology fits that description?", options:["Stereolithography","Selective laser sintering","None of the options","Fused deposition modeling","Polyjet"], multi:false },
+  { id:"q8_7", tag:"Prototyping", text:"Stereolithography (SLA) and Continuous Liquid Interface Production (CLIP) 3D printing technologies fall under the \"Vat Photopolymerization\" ASTM category.", options:["True","False"], multi:false },
+  { id:"q8_8", tag:"Prototyping", text:"Prototypes are good to reveal unanticipated phenomena.", options:["True","False"], multi:false },
+  { id:"q8_9", tag:"Prototyping", text:"Works-like prototypes are examples of comprehensive prototypes.", options:["True","False"], multi:false },
+
+  // === QUIZ 6 (Canvas #310946): Concept Generation, Selection, and Testing ===
+  { id:"q6b_1", tag:"Concept Gen & Selection", text:"Nielsen & Landauer showed that, in capability testing, a panel of five users will typically reveal approximately 80-85% of the problems.", options:["True","False"], multi:false },
+  { id:"q6b_2", tag:"Concept Gen & Selection", text:"What is the first activity of the concept development phase?", options:["Identification of needs","Concept selection","Concept testing","Concept generation","Creating a design brief"], multi:false },
+  { id:"q6b_3", tag:"Concept Gen & Selection", text:"Concept screening matrices provide increased resolution than concept scoring matrices.", options:["True","False"], multi:false },
+  { id:"q6b_4", tag:"Concept Gen & Selection", text:"When collecting concept test data by phone, how is a product concept communicated?", options:["None of the options are right; you can't test a product concept by phone","Using prototypes","Using verbal descriptions","Using storyboards and simulations","Using verbal descriptions and sketches"], multi:false },
+  { id:"q6b_5", tag:"Concept Gen & Selection", text:"Your team needs to objectively select product concepts. Which tool would you recommend using?", options:["Consider pros and cons","Choose based on intuition","Decision matrices","Team multi-voting","Online survey"], multi:false },
+  { id:"q6b_6", tag:"Concept Gen & Selection", text:"Designs are analogous if they also share at least one function or behavior, but not necessarily similar structures.", options:["True","False"], multi:false },
+  { id:"q6b_7", tag:"Concept Gen & Selection", text:"Design by analogy NOT always connects nature (source domain) with an artificial application (target domain).", options:["True","False"], multi:false },
+  { id:"q6b_8", tag:"Concept Gen & Selection", text:"Which method is strongly recommended to start creating a successful new product concept?", options:["Economical success","Good consumer insights","Access to technology","A multidisciplinary team","Inspiration"], multi:false },
+  { id:"q6b_9", tag:"Concept Gen & Selection", text:"A mock-up of a chainsaw made of foam is an example of a...", options:["None of the options is a good one","Works-like model","Looks-like model","Simulation model"], multi:false },
+  { id:"q6b_10", tag:"Concept Gen & Selection", text:"Eye-tracking technology is an example of users' self-reported data.", options:["True","False"], multi:false },
+  { id:"q6b_11", tag:"Concept Gen & Selection", text:"What is the outcome of the \"Clarify the Problem\" phase of the concept generation method suggested by Ulrich and Eppinger?", options:["New concepts","Integrated solutions","Sub-problems","Reflection on the process","Existing concepts"], multi:false },
+  { id:"q6b_12", tag:"Concept Gen & Selection", text:"What is the outcome of the \"Explore Systematically\" phase of the concept generation method suggested by Ulrich and Eppinger?", options:["Reflection on the process","Integrated solutions","New concepts","Existing concepts","Sub-problems"], multi:false },
+  { id:"q6b_13", tag:"Concept Gen & Selection", text:"What is the outcome of the \"Search Internally\" phase of the concept generation method suggested by Ulrich and Eppinger?", options:["Integrated solutions","Sub-problems","Reflection on the process","New concepts","Existing concepts"], multi:false },
+  { id:"q6b_14", tag:"Concept Gen & Selection", text:"What is the outcome of the \"Search Externally\" phase of the concept generation method suggested by Ulrich and Eppinger?", options:["Existing concepts","New concepts","Reflection on the process","Integrated solutions","Sub-problems"], multi:false },
+  { id:"q6b_15", tag:"Concept Gen & Selection", text:"A product concept is an approximate description of...", options:["Form, working principles, and materials","Marketing, engineering, and manufacturing","Technology, materials, and form","Target audience, product features, and manufacturing processes","Form, working principles, and technology"], multi:false },
+  { id:"q6b_16", tag:"Concept Gen & Selection", text:"Product concept selection activities rely mainly on data gathered from...", options:["Focus groups","Surveys","Development team members","Potential users","Potential users and development team members"], multi:false },
+  { id:"q6b_17", tag:"Concept Gen & Selection", text:"Product concept testing activities rely mainly on data gathered from...", options:["Development team members","Surveys","Potential users and development team members","Potential users","Focus groups"], multi:false },
+  { id:"q6b_18", tag:"Concept Gen & Selection", text:"Which problem-decomposition technique is recommended for products with high levels of user interaction?", options:["Decomposition by key customer needs","Decomposition by functions and key customer needs","Decomposition by tasks","Decomposition by tasks and functions","Decomposition by functions"], multi:false },
+  { id:"q6b_19", tag:"Concept Gen & Selection", text:"Which problem-decomposition technique is recommended for products where shape is the primary problem?", options:["Decomposition by tasks","Decomposition by functions and key customer needs","Decomposition by functions","Decomposition by key customer needs","Decomposition by tasks and functions"], multi:false },
+  { id:"q6b_20", tag:"Concept Gen & Selection", text:"Online surveys are examples of users' self-reported data.", options:["True","False"], multi:false },
+
+  // === QUIZ 13: Intellectual Property ===
+  { id:"q13_1", tag:"Intellectual Property", text:"In 2012, the Apple v. Samsung case went to the US Supreme Court. What was the court's ruling?", options:["Samsung must pay Apple for the entire profit of its infringing phones.","Samsung must pay Apple for lost profits of Apple for the infringing devices.","Samsung must pay Apple a reasonable royalty for each phone that infringed Apple's designs.","Samsung must pay Apple proportionally to the contribution of the infringed design to the overall product.","Samsung did not infringe Apple's patents, therefore no damages."], multi:false },
+  { id:"q13_2", tag:"Intellectual Property", text:"In 2016, the Apple v. Samsung case went to the US Supreme Court. One of the critical debates among the US Supreme Court Justices related to the definition of:", options:["Patent","Article of manufacture","Machine","Article of manufacture"], multi:false },
+  { id:"q13_3", tag:"Intellectual Property", text:"Coca-Cola has held the design patent for its contour bottle for over 10 years.", options:["True","False"], multi:false },
+  { id:"q13_4", tag:"Intellectual Property", text:"You have included a selector with a very distinctive shape that lets the buyer have a better grip than other mechanisms on the market. Which IP mechanism can you use to protect your design from being copied?", options:["Utility patent","Trade secret","Design patent, utility patent, and trademark","Disagreement among attorneys","Many options"], multi:false },
+  { id:"q13_5", tag:"Intellectual Property", text:"A design patent protects the legal right to include mechanisms with the contractual parameter described by the design control.", options:["True","False"], multi:false },
+  { id:"q13_6", tag:"Intellectual Property", text:"What happens when a design patent is brought to court and it is established that it has practical utility?", options:["It will no longer be considered a design patent and can be invalidated.","A design patent is sometimes considered a utility patent and as long as it is established the court can validate it.","A design patent is sometimes considered a utility patent and it is likely the patent will become a template/benchmark.","The design patent cannot be invalidated."], multi:false },
+  { id:"q13_7", tag:"Intellectual Property", text:"What are the three requirements for design patents? (Select all that apply)", options:["Novel","Non-obvious and attractive","Ornamental","Symmetrical, purely non-decorative","Novel, non-obvious, non-decorative"], multi:true },
+  { id:"q13_8", tag:"Intellectual Property", text:"In the US, patents can receive a limited qualification.", options:["True","False"], multi:false },
+  { id:"q13_9", tag:"Intellectual Property", text:"A 'Patent Pending' legend indicates that...", options:["A patent application has been filed.","The patent has not yet been granted and can be used freely.","A patent application is in the granted phase.","Patent applications are already granted."], multi:false },
+  { id:"q13_10", tag:"Intellectual Property", text:"Why is a patent strongly recommended over an oral or written description of an invention submitted to the US Patent Support Center?", options:["To do patent searches on your behalf.","The design will only be protected.","The design was accepted.","Nothing through this office."], multi:false },
+  { id:"q13_11", tag:"Intellectual Property", text:"The © symbol replaces the word 'copyright'.", options:["True","False"], multi:false },
+  { id:"q13_12", tag:"Intellectual Property", text:"The ® symbol is used to signal a registered trademark or service mark.", options:["True","False"], multi:false },
+  { id:"q13_13", tag:"Intellectual Property", text:"The ™ symbol is used to signal an unregistered trademark.", options:["True","False"], multi:false },
+  { id:"q13_14", tag:"Intellectual Property", text:"The SM symbol is used to signal an unregistered service mark.", options:["True","False"], multi:false },
+];
+
+// ── PRE-LOAD CORRECT ANSWERS FROM IMAGES ──────────────────────────────────
+const FACTORY_ANSWERS = {
+  // Q1
+  q1_1:[1], q1_2:[0], q1_3:[4], q1_4:[1], q1_5:[3], q1_6:[1], q1_7:[1],
+  q1_8:[3], q1_9:[0], q1_10:[1], q1_11:[2], q1_12:[0], q1_13:[0],
+  q1_14:[4], q1_15:[0], q1_16:[3], q1_17:[0], q1_18:[1], q1_19:[2], q1_20:[0],
+  // Q2
+  q2_1:[0], q2_2:[0], q2_3:[1], q2_4:[2], q2_5:[2], q2_6:[0], q2_7:[0],
+  q2_8:[1], q2_9:[2], q2_10:[1], q2_11:[2], q2_12:[1], q2_13:[0],
+  q2_14:[3], q2_15:[4], q2_16:[2], q2_17:[3], q2_18:[2], q2_19:[3], q2_20:[0],
+  // Q3
+  q3_1:[1,2], q3_2:[1], q3_3:[3], q3_4:[0], q3_5:[3], q3_6:[4],
+  q3_7:[3], q3_8:[1], q3_9:[4], q3_10:[0], q3_11:[3], q3_12:[5],
+  q3_13:[2], q3_14:[4], q3_15:[1], q3_16:[1],
+  // Q4
+  q4_1:[2], q4_2:[2], q4_3:[3], q4_4:[1], q4_5:[3], q4_6:[0],
+  q4_7:[1], q4_8:[0], q4_9:[1], q4_10:[4], q4_11:[1],
+  // Q5
+  q5_1:[1,3], q5_2:[0], q5_3:[0], q5_4:[0], q5_5:[0], q5_6:[1],
+  q5_7:[0,2,4], q5_8:[0], q5_9:[0], q5_10:[0],
+  // Q6
+  q6_1:[1], q6_2:[3], q6_3:[1], q6_4:[3], q6_5:[0], q6_6:[3],
+  q6_7:[0], q6_8:[0], q6_9:[2], q6_10:[0],
+  // Q7
+  q7_1:[0], q7_2:[2], q7_3:[0], q7_4:[0], q7_5:[0,1,2,3,4],
+  q7_6:[1], q7_7:[0], q7_8:[0], q7_9:[0], q7_10:[0],
+  // Q8
+  q8_1:[1], q8_2:[1], q8_3:[0], q8_4:[0], q8_5:[0], q8_6:[0],
+  q8_7:[0], q8_8:[0], q8_9:[1],
+  // Q6b
+  q6b_1:[0], q6b_2:[0], q6b_3:[1], q6b_4:[2], q6b_5:[2], q6b_6:[0], q6b_7:[0],
+  q6b_8:[1], q6b_9:[2], q6b_10:[1], q6b_11:[2], q6b_12:[1], q6b_13:[3],
+  q6b_14:[0], q6b_15:[4], q6b_16:[2], q6b_17:[3], q6b_18:[2], q6b_19:[3], q6b_20:[0],
+  // Q13
+  q13_1:[3], q13_2:[1], q13_3:[1], q13_4:[2], q13_5:[1], q13_6:[0],
+  q13_7:[0,2], q13_8:[1], q13_9:[0], q13_10:[3], q13_11:[0], q13_12:[0], q13_13:[0], q13_14:[0],
+};
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let correctAnswers = {};
+let bestScore = null;
+
+function loadState() {
+  try {
+    const stored = localStorage.getItem('quiz_correct_answers_v2');
+    correctAnswers = stored ? JSON.parse(stored) : Object.assign({}, FACTORY_ANSWERS);
+  } catch(e) {
+    correctAnswers = Object.assign({}, FACTORY_ANSWERS);
+  }
+  try {
+    const bs = localStorage.getItem('quiz_best_score');
+    bestScore = bs ? JSON.parse(bs) : null;
+  } catch(e) { bestScore = null; }
+  // if no stored answers, seed from factory
+  if (!localStorage.getItem('quiz_correct_answers_v2')) {
+    saveAnswers();
+  }
+}
+
+function saveAnswers() {
+  localStorage.setItem('quiz_correct_answers_v2', JSON.stringify(correctAnswers));
+}
+
+function saveBest(score) {
+  if (bestScore === null || score > bestScore) {
+    bestScore = score;
+    localStorage.setItem('quiz_best_score', JSON.stringify(bestScore));
+  }
+}
+
+let currentQuiz = [], currentIndex = 0, userAnswers = [], selectedForCurrent = new Set(), quizLocked = false;
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  document.getElementById('btn-home').style.display = id === 'home-screen' ? 'none' : '';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── HOME ──────────────────────────────────────────────────────────────────
+function updateHomeStats() {
+  document.getElementById('stat-total').textContent = ALL_QUESTIONS.length;
+  const answered = ALL_QUESTIONS.filter(q => correctAnswers[q.id] && correctAnswers[q.id].length > 0).length;
+  document.getElementById('stat-answered').textContent = answered;
+  document.getElementById('stat-best').textContent = bestScore !== null ? bestScore + '%' : '—';
+}
+
+// ── ADMIN ──────────────────────────────────────────────────────────────────
+function buildAdminPanel() {
+  const container = document.getElementById('admin-questions-list');
+  container.innerHTML = '';
+  let currentTag = '';
+  ALL_QUESTIONS.forEach((q, qi) => {
+    const saved = correctAnswers[q.id] || [];
+    if (q.tag !== currentTag) {
+      currentTag = q.tag;
+      const hdr = document.createElement('div');
+      hdr.style.cssText = 'font-family:Syne,sans-serif;font-weight:800;font-size:1rem;margin:28px 0 12px;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:8px;';
+      hdr.textContent = q.tag;
+      container.appendChild(hdr);
+    }
+    const div = document.createElement('div');
+    div.className = 'admin-question';
+    const letters = 'ABCDEFGHIJ';
+    const optionsHtml = q.options.map((opt, i) => {
+      const checked = saved.includes(i) ? 'checked' : '';
+      const selClass = saved.includes(i) ? 'selected-correct' : '';
+      return `<label class="admin-option ${selClass}" id="admlbl_${q.id}_${i}">
+        <input type="checkbox" data-qid="${q.id}" data-idx="${i}" ${checked} onchange="adminToggle('${q.id}',${i},this)">
+        <span style="min-width:18px;color:var(--accent);font-size:0.7rem">${letters[i]}</span>
+        <span>${opt}</span>
+      </label>`;
+    }).join('');
+    div.innerHTML = `
+      <div class="admin-q-header">
+        <span class="q-num">Q${qi+1}</span>
+        <span class="admin-q-text">${q.text}</span>
+      </div>
+      <div class="admin-options">${optionsHtml}</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function adminToggle(qid, idx, checkbox) {
+  if (!correctAnswers[qid]) correctAnswers[qid] = [];
+  const q = ALL_QUESTIONS.find(x => x.id === qid);
+  if (!q.multi) {
+    correctAnswers[qid] = [];
+    document.querySelectorAll(`input[data-qid="${qid}"]`).forEach(b => {
+      b.checked = false;
+      b.closest('.admin-option').classList.remove('selected-correct');
+    });
+    correctAnswers[qid] = [idx];
+    checkbox.checked = true;
+    checkbox.closest('.admin-option').classList.add('selected-correct');
+  } else {
+    if (checkbox.checked) {
+      if (!correctAnswers[qid].includes(idx)) correctAnswers[qid].push(idx);
+      checkbox.closest('.admin-option').classList.add('selected-correct');
+    } else {
+      correctAnswers[qid] = correctAnswers[qid].filter(x => x !== idx);
+      checkbox.closest('.admin-option').classList.remove('selected-correct');
+    }
+  }
+  saveAnswers();
+  showToast('Saved ✓');
+  updateHomeStats();
+}
+
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────────
+function exportAnswers() {
+  const payload = { v: 2, answers: correctAnswers };
+  const json = JSON.stringify(payload);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  document.getElementById('export-text').value = b64;
+  document.getElementById('export-modal').classList.add('open');
+}
+
+function importAnswers(b64) {
+  try {
+    const json = decodeURIComponent(escape(atob(b64.trim())));
+    const payload = JSON.parse(json);
+    if (!payload.answers || typeof payload.answers !== 'object') throw new Error('bad format');
+    correctAnswers = payload.answers;
+    saveAnswers();
+    updateHomeStats();
+    showToast('Answers imported ✓');
+    document.getElementById('import-modal').classList.remove('open');
+    buildAdminPanel();
+  } catch(e) {
+    document.getElementById('import-error').style.display = 'block';
+  }
+}
+
+// ── QUIZ ──────────────────────────────────────────────────────────────────
+function startQuiz(onlyUnanswered = false) {
+  let pool = onlyUnanswered
+    ? ALL_QUESTIONS.filter(q => !correctAnswers[q.id] || correctAnswers[q.id].length === 0)
+    : ALL_QUESTIONS;
+  if (pool.length === 0) { showToast('No questions match that filter!'); return; }
+  currentQuiz = shuffle(pool).map(q => ({
+    ...q,
+    options: shuffle(q.options.map((o, i) => ({ text: o, origIdx: i })))
+  }));
+  currentIndex = 0;
+  userAnswers = new Array(currentQuiz.length).fill(null);
+  showScreen('quiz-screen');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = currentQuiz[currentIndex];
+  selectedForCurrent = new Set();
+  quizLocked = false;
+  document.getElementById('q-current').textContent = currentIndex + 1;
+  document.getElementById('q-total').textContent = currentQuiz.length;
+  document.getElementById('progress-fill').style.width = ((currentIndex / currentQuiz.length) * 100) + '%';
+  document.getElementById('quiz-q-text').textContent = q.text;
+  document.getElementById('q-tag').textContent = q.tag;
+
+  const optContainer = document.getElementById('quiz-options');
+  optContainer.innerHTML = '';
+  const letters = 'ABCDEFGHIJ';
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'quiz-option';
+    div.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt.text}</span>`;
+    div.addEventListener('click', () => toggleOption(div, i));
+    optContainer.appendChild(div);
+  });
+
+  const fb = document.getElementById('feedback-box');
+  fb.style.display = 'none';
+  fb.className = 'feedback-box';
+  document.getElementById('btn-check').style.display = 'none';
+  document.getElementById('btn-next').style.display = 'none';
+
+  const hasAnswers = correctAnswers[q.id] && correctAnswers[q.id].length > 0;
+  if (hasAnswers) {
+    document.getElementById('btn-check').style.display = '';
+    document.getElementById('btn-check').disabled = true;
+  } else {
+    document.getElementById('btn-next').style.display = '';
+    document.getElementById('btn-next').textContent = currentIndex < currentQuiz.length - 1 ? 'Next →' : 'Finish';
+  }
+}
+
+function toggleOption(div, i) {
+  if (quizLocked) return;
+  const q = currentQuiz[currentIndex];
+  if (!q.multi) {
+    document.querySelectorAll('.quiz-option').forEach(d => { d.classList.remove('selected'); });
+    selectedForCurrent.clear();
+  }
+  if (selectedForCurrent.has(i)) {
+    selectedForCurrent.delete(i);
+    div.classList.remove('selected');
+  } else {
+    selectedForCurrent.add(i);
+    div.classList.add('selected');
+  }
+  const checkBtn = document.getElementById('btn-check');
+  if (checkBtn.style.display !== 'none') checkBtn.disabled = selectedForCurrent.size === 0;
+}
+
+function checkAnswer() {
+  if (selectedForCurrent.size === 0) return;
+  const q = currentQuiz[currentIndex];
+  quizLocked = true;
+  const savedCorrectOrigIdxs = correctAnswers[q.id] || [];
+  const selectedOrigIdxs = [...selectedForCurrent].map(si => q.options[si].origIdx);
+  const isCorrect = savedCorrectOrigIdxs.length === selectedOrigIdxs.length &&
+    savedCorrectOrigIdxs.every(x => selectedOrigIdxs.includes(x));
+  userAnswers[currentIndex] = { selected: selectedOrigIdxs, correct: isCorrect };
+
+  document.querySelectorAll('.quiz-option').forEach((div, i) => {
+    div.classList.add('locked');
+    const origIdx = q.options[i].origIdx;
+    const isCorrectOption = savedCorrectOrigIdxs.includes(origIdx);
+    const isSelected = selectedForCurrent.has(i);
+    if (isSelected && isCorrectOption) div.classList.add('correct');
+    else if (isSelected && !isCorrectOption) div.classList.add('wrong');
+    else if (!isSelected && isCorrectOption) div.classList.add('reveal-correct');
+  });
+
+  const fb = document.getElementById('feedback-box');
+  fb.style.display = 'block';
+  if (isCorrect) {
+    fb.className = 'feedback-box correct';
+    fb.textContent = '✓ Correct!';
+  } else {
+    fb.className = 'feedback-box wrong';
+    const correctTexts = savedCorrectOrigIdxs.map(idx => q.options.find(o => o.origIdx === idx)?.text || '').join(', ');
+    fb.textContent = `✗ Incorrect. Correct: ${correctTexts}`;
+  }
+  document.getElementById('btn-check').style.display = 'none';
+  document.getElementById('btn-next').style.display = '';
+  document.getElementById('btn-next').textContent = currentIndex < currentQuiz.length - 1 ? 'Next →' : 'Finish';
+}
+
+function nextQuestion() {
+  if (currentIndex < currentQuiz.length - 1) { currentIndex++; renderQuestion(); }
+  else showResults();
+}
+
+// ── RESULTS ──────────────────────────────────────────────────────────────
+function showResults() {
+  const answered = userAnswers.filter(a => a !== null);
+  const correct = answered.filter(a => a.correct).length;
+  const total = currentQuiz.length;
+  const pct = Math.round((correct / total) * 100);
+  saveBest(pct);
+  updateHomeStats();
+  document.getElementById('res-correct').textContent = correct;
+  document.getElementById('res-wrong').textContent = total - correct;
+  document.getElementById('res-total').textContent = total;
+  document.getElementById('score-pct').textContent = pct + '%';
+  const msgs = [[90,"Outstanding! You're ready for the midterm 🎯"],[75,"Great work! A little more review and you're set."],[60,"Decent start — focus on the wrong answers."],[0,"Keep practicing — you'll get there!"]];
+  const msg = msgs.find(([min]) => pct >= min);
+  document.getElementById('result-heading').textContent = pct >= 90 ? 'Excellent Work!' : pct >= 75 ? 'Good Job!' : pct >= 60 ? 'Not Bad!' : 'Keep Studying';
+  document.getElementById('result-msg').textContent = msg[1];
+  const circumference = 408.41;
+  const circle = document.getElementById('score-circle');
+  circle.style.stroke = pct >= 75 ? 'var(--correct)' : pct >= 50 ? 'var(--accent)' : 'var(--wrong)';
+  setTimeout(() => { circle.style.strokeDashoffset = circumference - (pct / 100) * circumference; }, 100);
+  showScreen('results-screen');
+}
+
+function buildReview() {
+  const container = document.getElementById('review-list');
+  container.innerHTML = '';
+  currentQuiz.forEach((q, i) => {
+    const ans = userAnswers[i];
+    const div = document.createElement('div');
+    div.className = 'review-item ' + (ans ? (ans.correct ? 'correct-q' : 'wrong-q') : '');
+    const badge = ans ? (ans.correct ? '<span class="review-badge c">Correct</span>' : '<span class="review-badge w">Wrong</span>') : '<span class="review-badge" style="background:var(--surface2)">Skipped</span>';
+    const savedOrigIdxs = correctAnswers[q.id] || [];
+    const correctTexts = savedOrigIdxs.map(idx => q.options.find(o => o.origIdx === idx)?.text || '').join(', ');
+    div.innerHTML = `<div class="review-q-header">${badge}<span class="review-q-text">${q.text}</span></div>${correctTexts ? `<div class="review-answer">Correct: <span>${correctTexts}</span></div>` : ''}`;
+    container.appendChild(div);
+  });
+}
+
+// ── ADMIN AUTH ──────────────────────────────────────────────────────────
+let adminUnlocked = false;
+
+document.getElementById('btn-admin-open').addEventListener('click', () => {
+  if (adminUnlocked) { buildAdminPanel(); showScreen('admin-screen'); return; }
+  document.getElementById('admin-modal').classList.add('open');
+  document.getElementById('admin-pwd-input').value = '';
+  document.getElementById('pwd-error').style.display = 'none';
+  setTimeout(() => document.getElementById('admin-pwd-input').focus(), 100);
+});
+document.getElementById('btn-pwd-confirm').addEventListener('click', () => {
+  if (document.getElementById('admin-pwd-input').value === ADMIN_PASSWORD) {
+    adminUnlocked = true;
+    document.getElementById('admin-modal').classList.remove('open');
+    buildAdminPanel();
+    showScreen('admin-screen');
+  } else {
+    document.getElementById('pwd-error').style.display = 'block';
+    document.getElementById('admin-pwd-input').value = '';
+    document.getElementById('admin-pwd-input').focus();
+  }
+});
+document.getElementById('admin-pwd-input').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('btn-pwd-confirm').click(); });
+document.getElementById('btn-pwd-cancel').addEventListener('click', () => document.getElementById('admin-modal').classList.remove('open'));
+
+// ── EXPORT / IMPORT BUTTONS ───────────────────────────────────────────────
+document.getElementById('btn-export-answers').addEventListener('click', exportAnswers);
+document.getElementById('btn-copy-export').addEventListener('click', () => {
+  const txt = document.getElementById('export-text');
+  txt.select();
+  try { document.execCommand('copy'); } catch(e) { navigator.clipboard.writeText(txt.value); }
+  showToast('Copied to clipboard ✓');
+});
+document.getElementById('btn-close-export').addEventListener('click', () => document.getElementById('export-modal').classList.remove('open'));
+document.getElementById('btn-import-answers').addEventListener('click', () => {
+  document.getElementById('import-text').value = '';
+  document.getElementById('import-error').style.display = 'none';
+  document.getElementById('import-modal').classList.add('open');
+});
+document.getElementById('btn-do-import').addEventListener('click', () => {
+  importAnswers(document.getElementById('import-text').value);
+});
+document.getElementById('btn-close-import').addEventListener('click', () => document.getElementById('import-modal').classList.remove('open'));
+
+// ── NAV ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-home').addEventListener('click', () => { showScreen('home-screen'); updateHomeStats(); });
+document.getElementById('btn-admin-back').addEventListener('click', () => { showScreen('home-screen'); updateHomeStats(); });
+document.getElementById('btn-start').addEventListener('click', () => startQuiz(false));
+document.getElementById('btn-start-unanswered').addEventListener('click', () => startQuiz(true));
+document.getElementById('btn-check').addEventListener('click', checkAnswer);
+document.getElementById('btn-next').addEventListener('click', nextQuestion);
+document.getElementById('btn-retake').addEventListener('click', () => startQuiz(false));
+document.getElementById('btn-review').addEventListener('click', () => { buildReview(); showScreen('review-screen'); });
+document.getElementById('btn-results-home').addEventListener('click', () => { showScreen('home-screen'); updateHomeStats(); });
+document.getElementById('btn-review-back').addEventListener('click', () => showScreen('results-screen'));
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+loadState();
+updateHomeStats();
+</script>
+</body>
+</html>
